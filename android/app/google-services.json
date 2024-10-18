@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "315378143252",
+    "project_id": "pillbuzz",
+    "storage_bucket": "pillbuzz.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:315378143252:android:25dc7ae10909d005df9701",
+        "android_client_info": {
+          "package_name": "com.example.pill_buzz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGELDej_ShBAkU1tvLQ1fVgYoish9KiK8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
