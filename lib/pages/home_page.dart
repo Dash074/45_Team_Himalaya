@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_page.dart'; // Import your login page
 import 'package:intl/intl.dart';
+import 'imageinput.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -78,7 +79,8 @@ class _HomePageState extends State<HomePage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: dates.map((date) {
                             return Container(
-                              padding: EdgeInsets.all(4), // Space between boxes
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 6), // Space between boxes
                               width: 48, // Uniform width for boxes
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -138,6 +140,36 @@ class _HomePageState extends State<HomePage> {
                   backgroundColor: Colors.red,
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.5),
+              spreadRadius: 2,
+              blurRadius: 10,
+              offset: Offset(0, -3), // Shadow positioned above the bar
+            ),
+          ],
+        ),
+        padding: EdgeInsets.symmetric(
+            vertical: 10), // Padding to make the bar a bit thicker
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ImageInputPage()),
+                );
+              },
+              child: Icon(Icons.add),
+              backgroundColor: Colors.blue, // Color for the floating button
             ),
           ],
         ),
