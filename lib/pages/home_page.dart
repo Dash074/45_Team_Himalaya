@@ -44,94 +44,103 @@ class _HomePageState extends State<HomePage> {
       dates.add(_currentDate.add(Duration(days: i)));
     }
 
+    // Determine the current month
+    String currentMonth = DateFormat('MMMM').format(_currentDate);
+
     return Scaffold(
       appBar: AppBar(title: Text('Home')),
-      body: Column(
-        children: [
-          Container(
-            color: Colors.lightBlue.shade50, // Lighter pastel blue color
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Text(
-                  DateFormat('MMMM').format(_currentDate), // Current month
-                  style: TextStyle(fontSize: 24, color: Colors.black),
-                ),
-                SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.arrow_left, color: Colors.black),
-                      onPressed: _previousDates,
-                    ),
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: dates.map((date) {
-                          bool isToday =
-                              DateUtils.isSameDay(date, DateTime.now());
-                          return Container(
-                            decoration: BoxDecoration(
-                              color: isToday
-                                  ? Colors.yellow.shade200
-                                  : Colors.grey[300],
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.5),
-                                  spreadRadius: 2,
-                                  blurRadius: 5,
-                                  offset: Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            padding: EdgeInsets.all(8),
-                            width: 48, // Adjust width for uniform size
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  DateFormat('dd').format(date),
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: isToday
-                                          ? Colors.black
-                                          : Colors.black54),
-                                ),
-                                Text(
-                                  DateFormat('EEE').format(date),
-                                  style: TextStyle(
-                                      color: isToday
-                                          ? Colors.black
-                                          : Colors.black54),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
+      body: Padding(
+        // Added padding for screen border reduction
+        padding: const EdgeInsets.symmetric(horizontal: 8.0), // Reduced padding
+        child: Column(
+          children: [
+            Container(
+              color: Colors.lightBlue.shade50, // Lighter pastel blue color
+              padding: EdgeInsets.all(8.0), // Reduced padding
+              child: Column(
+                children: [
+                  Text(
+                    currentMonth, // Current month
+                    style: TextStyle(fontSize: 24, color: Colors.black),
+                  ),
+                  SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment
+                        .spaceBetween, // Buttons on extreme ends
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.arrow_left, color: Colors.black),
+                        onPressed: _previousDates,
                       ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.arrow_right, color: Colors.black),
-                      onPressed: _nextDates,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 20),
-          Center(
-            child: ElevatedButton(
-              onPressed: () => _logout(context),
-              child: Text('Logout'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                      SizedBox(width: 10), // Space between button and carousel
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: dates.map((date) {
+                            return Container(
+                              padding: EdgeInsets.all(4), // Space between boxes
+                              width: 48, // Uniform width for boxes
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    DateFormat('EEE')
+                                        .format(date), // Shortened day name
+                                    style: TextStyle(color: Colors.black54),
+                                  ),
+                                  Text(
+                                    DateFormat('dd').format(date),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: DateUtils.isSameDay(
+                                              date, DateTime.now())
+                                          ? Colors.black
+                                          : Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              decoration: BoxDecoration(
+                                color: DateUtils.isSameDay(date, DateTime.now())
+                                    ? Colors.yellow.shade200
+                                    : Colors
+                                        .transparent, // No box for non-highlighted dates
+                                borderRadius: BorderRadius.circular(8),
+                                // boxShadow: [
+                                //   BoxShadow(
+                                //     color: Colors.grey.withOpacity(0.5),
+                                //     spreadRadius: 2,
+                                //     blurRadius: 5,
+                                //     offset: Offset(0, 3),
+                                //   ),
+                                // ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      SizedBox(width: 10), // Space between carousel and button
+                      IconButton(
+                        icon: Icon(Icons.arrow_right, color: Colors.black),
+                        onPressed: _nextDates,
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            SizedBox(height: 20),
+            Center(
+              child: ElevatedButton(
+                onPressed: () => _logout(context),
+                child: Text('Logout'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
