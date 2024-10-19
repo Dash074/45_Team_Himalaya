@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_page.dart';
 import 'package:intl/intl.dart';
 import 'imageinput.dart';
-import 'reminder.dart';
-import 'reminder_service.dart';
 import 'profile_pages.dart';
 
 class HomePage extends StatefulWidget {
@@ -14,9 +13,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   DateTime _currentDate = DateTime.now();
-  List<Reminder> _reminders = [];
-  final ReminderService _reminderService = ReminderService();
+  List<Map<String, dynamic>> _reminders = [];
 
   @override
   void initState() {
@@ -29,16 +28,65 @@ class _HomePageState extends State<HomePage> {
 
     if (userId != null) {
       try {
-        List<Reminder> reminders =
-            await _reminderService.fetchReminders(userId);
+        // Fetch data from Firestore
+        QuerySnapshot snapshot = await _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('medicines')
+            .get();
+
+        // Map the data to a list of reminders
         setState(() {
-          _reminders = reminders;
+          _reminders = snapshot.docs
+              .map((doc) => doc.data() as Map<String, dynamic>)
+              .toList();
         });
+
+        // Debugging: Print the reminders fetched
+        print('Fetched reminders: $_reminders');
       } catch (e) {
+        print('Error fetching reminders: $e');
         _showSnackBar('Error fetching reminders: $e');
       }
     } else {
+      print('User not logged in');
       _showSnackBar('User not logged in');
+    }
+  }
+
+  void _updateReminder(String reminderId, String time, bool isActive) {
+    String? userId = _auth.currentUser?.uid;
+
+    if (userId != null) {
+      _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('medicines')
+          .doc(reminderId)
+          .update({'time': time, 'isActive': isActive}).then((_) {
+        print('Reminder updated successfully.');
+      }).catchError((error) {
+        print('Failed to update reminder: $error');
+      });
+    }
+  }
+
+  Future<void> _pickTime(
+      String reminderId, String currentTime, bool isActive) async {
+    TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(DateFormat.jm().parse(currentTime)),
+    );
+
+    if (pickedTime != null) {
+      // Convert the picked TimeOfDay to a formatted string
+      final now = DateTime.now();
+      final newDateTime = DateTime(
+          now.year, now.month, now.day, pickedTime.hour, pickedTime.minute);
+      String formattedTime = DateFormat.jm().format(newDateTime);
+
+      // Update the reminder in the database with the new time
+      _updateReminder(reminderId, formattedTime, isActive);
     }
   }
 
@@ -55,7 +103,9 @@ class _HomePageState extends State<HomePage> {
 
   List<DateTime> _generateDates() {
     return List.generate(
-        5, (index) => _currentDate.add(Duration(days: index - 2)));
+      5,
+      (index) => _currentDate.add(Duration(days: index - 2)),
+    );
   }
 
   @override
@@ -95,7 +145,7 @@ class _HomePageState extends State<HomePage> {
             children: [
               IconButton(
                 icon: Icon(Icons.arrow_left, color: Colors.black),
-                onPressed: () => _changeDate(-1), // Update here
+                onPressed: () => _changeDate(-1),
               ),
               Expanded(
                 child: Row(
@@ -105,7 +155,7 @@ class _HomePageState extends State<HomePage> {
               ),
               IconButton(
                 icon: Icon(Icons.arrow_right, color: Colors.black),
-                onPressed: () => _changeDate(1), // Update here
+                onPressed: () => _changeDate(1),
               ),
             ],
           ),
@@ -147,28 +197,85 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildReminderList() {
+    if (_reminders.isEmpty) {
+      return Center(
+        child: Text(
+          'No reminders available.',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
+    }
+
     return Expanded(
       child: ListView.builder(
         itemCount: _reminders.length,
         itemBuilder: (context, index) {
           final reminder = _reminders[index];
+          final reminderId = reminder['id'] ?? '';
+          final reminderTime = reminder['time'] != null
+              ? _convertStringToTime(reminder['time'])
+              : 'No time';
+
+          print(
+              'Reminder $index: time - ${reminder['time']}'); // Debug statement
+
           return Card(
             margin: EdgeInsets.symmetric(vertical: 8.0),
             child: ListTile(
-              title: Text(reminder.medicineName ?? 'No name provided'),
+              title: Text(reminder['name'] ?? 'No name'),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Dosage: ${reminder.dosage ?? 'N/A'} mg'),
-                  Text('Duration: ${reminder.duration ?? 'N/A'} days'),
-                  Text('Times: ${reminder.times.join(', ') ?? 'N/A'}'),
+                  Text('Dosage: ${reminder['dosage'] ?? 'No dosage'}'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(reminderTime),
+                      IconButton(
+                        icon: Icon(Icons.edit),
+                        onPressed: () {
+                          if (reminder['time'] != null) {
+                            _pickTime(reminderId, reminder['time'],
+                                reminder['isActive'] ?? true);
+                          } else {
+                            _showSnackBar('No time available to edit.');
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ],
+              ),
+              trailing: Switch(
+                value: reminder['isActive'] ?? true,
+                onChanged: (bool newValue) {
+                  if (reminderId.isNotEmpty) {
+                    _updateReminder(reminderId, reminder['time'], newValue);
+                  }
+                  setState(() {
+                    reminder['isActive'] = newValue;
+                  });
+                },
               ),
             ),
           );
         },
       ),
     );
+  }
+
+  String _convertStringToTime(String? timeString) {
+    if (timeString == null || timeString.isEmpty) {
+      return 'No time';
+    }
+
+    try {
+      DateTime parsedTime = DateFormat.jm().parse(timeString);
+      return DateFormat.jm().format(parsedTime);
+    } catch (e) {
+      print('Error parsing time: $e');
+      return 'Invalid time format';
+    }
   }
 
   Widget _buildBottomNavBar() {
@@ -195,7 +302,7 @@ class _HomePageState extends State<HomePage> {
                 MaterialPageRoute(builder: (context) => ImageInputPage()),
               );
             },
-            icon: Icon(Icons.add, color: Colors.blue, size: 30),
+            icon: Icon(Icons.camera_alt, color: Colors.blue, size: 30),
           ),
           IconButton(
             onPressed: () {
@@ -204,7 +311,17 @@ class _HomePageState extends State<HomePage> {
                 MaterialPageRoute(builder: (context) => ProfilePage()),
               );
             },
-            icon: Icon(Icons.person, color: Colors.green, size: 30),
+            icon: Icon(Icons.person, color: Colors.blue, size: 30),
+          ),
+          IconButton(
+            onPressed: () async {
+              await _auth.signOut();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginPage()),
+              );
+            },
+            icon: Icon(Icons.logout, color: Colors.blue, size: 30),
           ),
         ],
       ),
