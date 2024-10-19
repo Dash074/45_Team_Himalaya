@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'home_page.dart';
 
 class ImageInputPage extends StatefulWidget {
   @override
@@ -13,6 +16,8 @@ class _ImageInputPageState extends State<ImageInputPage> {
   XFile? _selectedImage;
   String? _recognizedText;
   List<Map<String, dynamic>> _medicinesList = [];
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<void> _pickImage() async {
     try {
@@ -59,15 +64,14 @@ class _ImageInputPageState extends State<ImageInputPage> {
   void _parseExtractedText(String text) {
     final RegExp medicineRegex =
         RegExp(r'\b(TAB|CAP)\.\s*([\w\s]+)', caseSensitive: false);
-    final RegExp dosageRegex =
-        RegExp(r'(\d+)\s*(morning|evening|night)', caseSensitive: false);
     final RegExp durationRegex = RegExp(r'(\d+)\s*days?', caseSensitive: false);
 
     List<Map<String, dynamic>> medicinesList = [];
 
     Iterable<Match> medicineMatches = medicineRegex.allMatches(text);
     for (var match in medicineMatches) {
-      String medicineName = match.group(0) ?? '';
+      String medicineName = match.group(0)?.split('.').last.trim() ??
+          ''; // Extract name after 'TAB.' or 'CAP.'
       String duration = '';
 
       Iterable<Match> durationMatches = durationRegex.allMatches(text);
@@ -76,7 +80,7 @@ class _ImageInputPageState extends State<ImageInputPage> {
       }
 
       medicinesList.add({
-        'name': medicineName.trim(),
+        'name': medicineName,
         'dosage': 1, // Start with a default dosage of 1
         'duration':
             int.tryParse(duration) ?? 7, // Ensure duration is an integer
@@ -87,6 +91,38 @@ class _ImageInputPageState extends State<ImageInputPage> {
     setState(() {
       _medicinesList = medicinesList;
     });
+  }
+
+  Future<void> _saveMedicines() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      for (var medicine in _medicinesList) {
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('medicines')
+            .add({
+          'name': medicine['name'],
+          'dosage': medicine['dosage'],
+          'duration': medicine['duration'],
+          'times': medicine['times'],
+        });
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Medicines saved successfully')),
+      );
+
+      // Navigate to the home page after saving
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+            builder: (context) =>
+                HomePage()), // Change HomePage() to your home page widget
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('User not authenticated')),
+      );
+    }
   }
 
   @override
@@ -114,6 +150,11 @@ class _ImageInputPageState extends State<ImageInputPage> {
               ),
               SizedBox(height: 20),
               _buildMedicinesList(),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _saveMedicines,
+                child: Center(child: Text('Save Medicines')),
+              ),
             ],
           ),
         ),
