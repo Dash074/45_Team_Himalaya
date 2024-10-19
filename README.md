@@ -1,6 +1,6 @@
 # PillBuzz
 
-A new Flutter project.
+Presenting our solution for TIETOEVRY Hackathon
 
 ## Getting Started
 
