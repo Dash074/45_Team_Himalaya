@@ -1,33 +1,39 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Reminder {
-  final String medicineName; // Name of the medicine
-  final String dosage; // Dosage information
-  final String duration; // Duration for taking the medicine
-  final String timings; // Timings for the reminders
+  final String id; // Assuming you have an id field
+  final String medicineName;
+  final int dosage;
+  final int duration;
+  final List<String> times; // Array of times
 
   Reminder({
+    required this.id,
     required this.medicineName,
     required this.dosage,
     required this.duration,
-    required this.timings,
+    required this.times,
   });
 
-  // Method to create a Reminder object from a Map (used for fetching from Firebase)
-  factory Reminder.fromMap(Map<String, dynamic> data) {
+  // Factory constructor to create a Reminder from Firestore document
+  factory Reminder.fromDocument(DocumentSnapshot doc) {
     return Reminder(
-      medicineName: data['medicineName'] ?? '',
-      dosage: data['dosage'] ?? '', // Added dosage
-      duration: data['duration'] ?? '', // Added duration
-      timings: data['timings'] ?? '', // Added timings
+      id: doc.id,
+      medicineName:
+          doc['name'] ?? '', // Adjust based on your Firestore field names
+      dosage: doc['dosage'] ?? 0,
+      duration: doc['duration'] ?? 0,
+      times: List<String>.from(doc['times'] ?? []), // Convert to List<String>
     );
   }
 
-  // Method to convert Reminder object to a Map (used for saving to Firebase)
+  // Convert Reminder to a Map for Firestore
   Map<String, dynamic> toMap() {
     return {
-      'medicineName': medicineName,
+      'name': medicineName,
       'dosage': dosage,
       'duration': duration,
-      'timings': timings,
+      'times': times,
     };
   }
 }
