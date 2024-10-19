@@ -13,8 +13,10 @@ user will input the images of prescription given by doctor and the textual data 
 
 2.) Medi Alarm: 
 User will get notified by a alarm followed by a voice notifying them about their medicine's name and dosage.
+
 3.) Response options:
 Once the app gives voice output for user to remind them about medication routine the user can accept by saying "Okay","Yes","Done" and the reminder will go off marking dosage completed. Whereas user can say "later" and the system will update timer and again remind the user in 30 mins. If no voice input is received from user than the system sends the reminder once again after 5 mins.
+
 4.) Voice based rescheduling:
 The user can rescehdule their dosage by saying "later" and would be reminded again after 30 mins. 
 
