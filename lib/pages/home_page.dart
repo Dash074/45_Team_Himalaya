@@ -3,6 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'login_page.dart'; // Import your login page
 import 'package:intl/intl.dart';
 import 'imageinput.dart';
+import 'reminder.dart'; // Import the Reminder model
+import 'reminder_service.dart'; // Import the ReminderService
+import 'profile_pages.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -12,6 +15,15 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   DateTime _currentDate = DateTime.now();
+  List<Reminder> _reminders = []; // List to hold reminders
+  final ReminderService _reminderService =
+      ReminderService(); // Create an instance of ReminderService
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchReminders(); // Fetch reminders on init
+  }
 
   void _logout(BuildContext context) async {
     await _auth.signOut();
@@ -35,6 +47,27 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _currentDate = _currentDate.add(Duration(days: 1));
     });
+  }
+
+  Future<void> _fetchReminders() async {
+    try {
+      String? userId = _auth.currentUser?.uid; // Get the current user's ID
+      if (userId != null) {
+        List<Reminder> reminders =
+            await _reminderService.fetchReminders(userId);
+        setState(() {
+          _reminders = reminders;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('User not logged in')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching reminders: $e')),
+      );
+    }
   }
 
   @override
@@ -108,14 +141,6 @@ class _HomePageState extends State<HomePage> {
                                     : Colors
                                         .transparent, // No box for non-highlighted dates
                                 borderRadius: BorderRadius.circular(8),
-                                // boxShadow: [
-                                //   BoxShadow(
-                                //     color: Colors.grey.withOpacity(0.5),
-                                //     spreadRadius: 2,
-                                //     blurRadius: 5,
-                                //     offset: Offset(0, 3),
-                                //   ),
-                                // ],
                               ),
                             );
                           }).toList(),
@@ -132,13 +157,26 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             SizedBox(height: 20),
-            Center(
-              child: ElevatedButton(
-                onPressed: () => _logout(context),
-                child: Text('Logout'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                ),
+            // Display reminders
+            Text(
+              'Reminders',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _reminders.length,
+                itemBuilder: (context, index) {
+                  final reminder = _reminders[index];
+                  return Card(
+                    margin: EdgeInsets.symmetric(vertical: 8.0),
+                    child: ListTile(
+                      title: Text(reminder.medicineName),
+                      subtitle: Text(
+                          'Dosage: ${reminder.dosage}\nTime: ${reminder.timings}'),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -159,17 +197,32 @@ class _HomePageState extends State<HomePage> {
         padding: EdgeInsets.symmetric(
             vertical: 10), // Padding to make the bar a bit thicker
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+              MainAxisAlignment.spaceAround, // Space evenly between buttons
           children: [
-            FloatingActionButton(
+            IconButton(
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => ImageInputPage()),
                 );
               },
-              child: Icon(Icons.add),
-              backgroundColor: Colors.blue, // Color for the floating button
+              icon: Icon(Icons.add),
+              color: Colors.blue, // Color for the add icon
+              iconSize: 30, // Size of the icon
+            ),
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          ProfilePage()), // Navigate to profile page
+                );
+              },
+              icon: Icon(Icons.person),
+              color: Colors.green, // Color for the profile icon
+              iconSize: 30, // Size of the icon
             ),
           ],
         ),
