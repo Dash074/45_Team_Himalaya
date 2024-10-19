@@ -7,6 +7,7 @@ Presenting our solution for TIETOEVRY Hackathon
 This project is Voice based medication reminder app.
 
 The key point of our app are:
+
 1.) Peronalized medication management:
 user will input the images of prescription given by doctor and the textual data is being extracted from the image and stored in database and accroding to user's data a personal mediaction reminder system will be implemented, which will notify user about next medicine's time and will create a customized medicine doage tracker.
 
