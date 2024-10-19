@@ -1,4 +1,4 @@
-# pill_buzz
+# PillBuzz
 
 A new Flutter project.
 
